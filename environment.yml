@@ -1,0 +1,15 @@
+# Environnement conda/mamba : mamba env create -f environment.yml
+name: pipeline-analyse
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.12
+  - snakemake>=8,<10
+  - uproot>=5
+  - awkward>=2
+  - numpy>=1.24
+  - pandas>=2.0
+  - pyarrow>=14
+  - matplotlib>=3.8
+  - pytest>=7

@@ -1,0 +1,9 @@
+# Dépendances Python du pipeline (pip install -r requirements.txt)
+snakemake>=8,<10
+uproot>=5
+awkward>=2
+numpy>=1.24
+pandas>=2.0
+pyarrow>=14        # backend parquet pour pandas
+matplotlib>=3.8
+pytest>=7

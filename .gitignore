@@ -1,0 +1,12 @@
+# Produits du pipeline (régénérables)
+data/raw/
+work/
+results/
+logs/
+.snakemake/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
