@@ -1,0 +1,66 @@
+# config par defaut (donnees mock). Lu uniquement par le Snakefile, les
+# scripts prennent tout en arguments.
+
+tree_name: events
+
+# true = on genere des .root bidons, false = mettre ses fichiers dans data/raw/
+use_mock_data: true
+
+seed: 42  # chaque sample prend seed + son index
+
+# kind: signal / background / data
+# scale: multiplie les poids (lumi * xsec / N)
+# mock: params du generateur, shape=peak (mean, width) ou falling (slope)
+samples:
+  signal_zprime:
+    kind: signal
+    label: "Z' (m = 125 GeV)"
+    scale: 0.5
+    mock:
+      n_events: 20000
+      shape: peak
+      mean: 125.0
+      width: 5.0
+  bkg_drellyan:
+    kind: background
+    label: "Drell-Yan"
+    scale: 1.0
+    mock:
+      n_events: 50000
+      shape: falling
+      slope: 40.0
+  bkg_ttbar:
+    kind: background
+    label: "ttbar"
+    scale: 0.8
+    mock:
+      n_events: 30000
+      shape: falling
+      slope: 80.0
+
+selection:
+  pt_min: 25.0  # GeV
+  abs_eta_max: 2.5
+  mass_min: 60.0
+  mass_max: 200.0
+
+histogram:
+  variable: mass
+  bins: 35
+  range: [60.0, 200.0]
+
+# fit RooFit
+# python = un interpreteur avec PyROOT (brew install root -> python3.15),
+#   verifier avec <python> -c "import ROOT"
+# dataset = mc_sum | pseudo_data (toy poisson, graine=seed) | data
+# background = exponential | bernstein
+fit:
+  python: python3.15
+  dataset: mc_sum
+  background: exponential
+  bkg_order: 3
+  signal:
+    mean: 125.0
+    mean_range: [100.0, 150.0]
+    sigma: 5.0
+    sigma_range: [1.0, 20.0]
