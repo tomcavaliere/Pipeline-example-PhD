@@ -55,7 +55,6 @@ def build_model(x, total, args):
         bkg = ROOT.RooExponential("bkg", "bruit de fond", x, tau)
         keep.append(tau)
     else:
-        # TODO: tester ordre 4 sur ttbar
         coefs = ROOT.RooArgList()
         for i in range(args.bkg_order + 1):
             c = ROOT.RooRealVar(f"b{i}", f"b_{{{i}}}", 1.0, 0.0, 100.0)
@@ -241,7 +240,7 @@ def parse_args(argv=None):
     p.add_argument("--output-png", type=Path, required=True)
     p.add_argument("--output-workspace", type=Path, required=True)
     p.add_argument("--background", choices=BACKGROUNDS, default="exponential")
-    p.add_argument("--bkg-order", type=int, default=3, help="ordre bernstein")
+    p.add_argument("--bkg-order", type=int, default=4, help="ordre bernstein")
     p.add_argument("--mean-init", type=float, default=125.0)
     p.add_argument("--mean-range", type=float, nargs=2, default=(100.0, 150.0), metavar=("LO", "HI"))
     p.add_argument("--sigma-init", type=float, default=5.0)
