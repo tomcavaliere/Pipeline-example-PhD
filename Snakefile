@@ -21,6 +21,7 @@ rule all:
         "results/summary.csv",
         "results/fit_mass.json",
         "results/fit_mass.png",
+        *(["results/report.html"] if config.get("report", True) else []),
 
 
 ## --- donnees mock ---
@@ -187,3 +188,25 @@ rule fit_mass:
         " --sigma-init {params.sig[sigma]}"
         " --sigma-range {params.sig[sigma_range][0]} {params.sig[sigma_range][1]}"
         " > {log} 2>&1"
+
+
+## --- rapport Quarto ---
+# quarto rend a cote du .qmd, on deplace ensuite dans results/.
+# QUARTO_PYTHON = le python du pipeline (il lui faut jupyter + tabulate)
+rule render_report:
+    input:
+        qmd="report/report.qmd",
+        config="config/config.yaml",
+        summary="results/summary.csv",
+        summary_png="results/summary_mass.png",
+        fit_json="results/fit_mass.json",
+        fit_png="results/fit_mass.png",
+        cutflows=expand("work/selected/{sample}.cutflow.json", sample=SAMPLES),
+    output:
+        "results/report.html",
+    log:
+        "logs/render_report.log",
+    shell:
+        "QUARTO_PYTHON=$(command -v python)"
+        " quarto render {input.qmd} --to html > {log} 2>&1"
+        " && mv report/report.html {output}"

@@ -1,0 +1,148 @@
+---
+title: "Analyse du pic de masse"
+subtitle: "Rapport généré par le pipeline Snakemake"
+date: today
+lang: fr
+format:
+  html:
+    toc: true
+    embed-resources: true
+    code-fold: true
+    code-summary: "Code"
+execute:
+  echo: false
+  warning: false
+jupyter: python3
+---
+
+```{python}
+#| tags: [parameters]
+# racine du projet (quarto execute depuis report/)
+root = ".."
+```
+
+```{python}
+import json
+from pathlib import Path
+
+import pandas as pd
+import yaml
+from IPython.display import Image, Markdown, display
+
+ROOT = Path(root)
+cfg = yaml.safe_load((ROOT / "config/config.yaml").read_text())
+fit = json.loads((ROOT / "results/fit_mass.json").read_text())
+summary = pd.read_csv(ROOT / "results/summary.csv")
+cutflows = {
+    s: json.loads((ROOT / f"work/selected/{s}.cutflow.json").read_text())
+    for s in cfg["samples"]
+}
+labels = {s: c.get("label", s) for s, c in cfg["samples"].items()}
+
+
+def table(df, **kw):
+    # les | (ex. "|eta| < 2.5") casseraient le tableau markdown ; NaN -> case vide
+    df = df.astype(object).where(df.notna(), "")
+    df = df.map(lambda v: v.replace("|", "\\|") if isinstance(v, str) else v)
+    display(Markdown(df.to_markdown(index=False, **kw)))
+```
+
+## Configuration
+
+```{python}
+sel = cfg["selection"]
+hist = cfg["histogram"]
+source = "générées (mock)" if cfg.get("use_mock_data") else "réelles (`data/raw/`)"
+display(Markdown(f"""
+- Données : {source}, graine `{cfg['seed']}`
+- Sélection : $p_T > {sel['pt_min']}$ GeV, $|\\eta| < {sel['abs_eta_max']}$,
+  ${sel['mass_min']} < m < {sel['mass_max']}$ GeV
+- Histogramme : `{hist['variable']}`, {hist['bins']} bins sur
+  [{hist['range'][0]}, {hist['range'][1]}] GeV
+"""))
+
+table(pd.DataFrame(
+    [
+        {"Échantillon": labels[s], "Type": c["kind"], "Facteur d'échelle": c.get("scale", 1.0)}
+        for s, c in cfg["samples"].items()
+    ]
+))
+```
+
+## Sélection des événements
+
+```{python}
+#| tbl-cap: "Cutflow (nombre brut d'événements après chaque coupure)"
+rows = {}
+for s, cf in cutflows.items():
+    for step in cf["cutflow"]:
+        rows.setdefault(step["cut"], {})[labels[s]] = step["n_raw"]
+cut_df = pd.DataFrame.from_dict(rows, orient="index").rename_axis("Coupure").reset_index()
+table(cut_df)
+```
+
+```{python}
+#| tbl-cap: "Bilan par échantillon"
+recap = summary.assign(sample=summary["sample"].map(labels))[
+    ["sample", "kind", "n_generated", "n_selected", "efficiency", "sum_weights", "mass_mean", "mass_std"]
+]
+recap.columns = ["Échantillon", "Type", "Générés", "Sélectionnés", "Efficacité",
+                 "Σ poids", "⟨m⟩ [GeV]", "σ(m) [GeV]"]
+table(recap, floatfmt=".4g")
+```
+
+```{python}
+#| fig-cap: "Distribution de masse après sélection"
+display(Image(filename=str(ROOT / "results/summary_mass.png")))
+```
+
+## Fit du pic de masse
+
+```{python}
+m = fit["model"]
+ok = "parameters" in fit
+if not ok:
+    display(Markdown(f"::: {{.callout-warning}}\nPas de fit : statut **{fit['status']}** "
+                     f"(Σ poids = {fit['sum_weights']:.0f}).\n:::"))
+else:
+    display(Markdown(
+        f"Modèle : signal **{m['signal']}** + fond **{m['background']}**, "
+        f"ajusté sur `{fit['dataset']}` (Σ poids = {fit['sum_weights']:.0f}). "
+        f"Statut : **{fit['status']}** (Minuit {fit['minuit_status']}, "
+        f"qualité de covariance {fit['cov_quality']}), "
+        f"$\\chi^2/\\mathrm{{ndf}} = {fit['chi2_ndf']:.2f}$ (ndf = {fit['ndf']})."
+    ))
+```
+
+```{python}
+#| fig-cap: "Résultat du fit"
+display(Image(filename=str(ROOT / "results/fit_mass.png")))
+```
+
+```{python}
+#| tbl-cap: "Paramètres ajustés"
+truth = {k: v for k, v in (fit.get("truth") or {}).items() if v is not None}
+par = pd.DataFrame(
+    [
+        {
+            "Paramètre": name,
+            "Valeur": p["value"],
+            "Erreur": p["error"],
+            "Vérité MC": truth.get(name),
+            "Pull": (p["value"] - truth[name]) / p["error"] if name in truth and p["error"] else None,
+        }
+        for name, p in fit.get("parameters", {}).items()
+    ]
+)
+if ok:
+    if not truth:
+        par = par.drop(columns=["Vérité MC", "Pull"])
+    table(par, floatfmt=".4g")
+```
+
+```{python}
+if fit.get("signal_over_error") is not None:
+    display(Markdown(
+        f"Signal extrait : $N_\\mathrm{{sig}}/\\sigma(N_\\mathrm{{sig}}) = {fit['signal_over_error']:.1f}$."
+    ))
+```

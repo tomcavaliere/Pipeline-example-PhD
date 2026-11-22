@@ -3,6 +3,9 @@ data/raw/
 work/
 results/
 logs/
+report/*.html
+report/*_files/
+report/.quarto/
 .snakemake/
 
 # Python

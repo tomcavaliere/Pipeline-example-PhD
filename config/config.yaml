@@ -64,3 +64,6 @@ fit:
     mean_range: [100.0, 150.0]
     sigma: 5.0
     sigma_range: [1.0, 20.0]
+
+# rapport HTML Quarto (results/report.html), demande quarto + jupyter
+report: true
