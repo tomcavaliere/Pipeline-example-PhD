@@ -19,6 +19,10 @@ fit:
   python: python3.15   # verifier avec : python3.15 -c "import ROOT"
 ```
 
+Le rapport HTML est rendu par [Quarto](https://quarto.org) (mac : `brew install --cask quarto`,
+deja inclus dans `environment.yml`). Pour s'en passer : `report: false` dans la config
+ou `snakemake --cores 2 --config report=False`.
+
 ## Lancer
 
 ```bash
@@ -31,6 +35,8 @@ pytest                 # tests
 
 - `results/summary_mass.png`, `results/summary.csv` : distributions et tableau par echantillon
 - `results/fit_mass.png`, `results/fit_mass.json` : fit et parametres
+- `results/report.html` : rapport Quarto autonome (config, cutflow, figures, parametres du fit),
+  source dans `report/report.qmd`
 - `logs/` en cas de probleme
 
 Coupures, binning, echantillons et options du fit : voir les commentaires dans `config/config.yaml`.
